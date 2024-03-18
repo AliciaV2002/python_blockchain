@@ -5,39 +5,51 @@ import time
 from flask import Flask, request
 import requests
 
-
+# Block hace referencia a un bloque de la cadena de bloques, que contiene transacciones y un hash anterior, así como un nonce. 
 class Block:
     def __init__(self, index, transactions, timestamp, previous_hash, nonce=0):
+        # index: posición del bloque en la cadena
         self.index = index
+        # transactions: lista de transacciones
         self.transactions = transactions
+        # timestamp: marca de tiempo
         self.timestamp = timestamp
+        # previous_hash: hash del bloque anterior
         self.previous_hash = previous_hash
+        # nonce: número aleatorio
         self.nonce = nonce
 
     def compute_hash(self):
         """
-        A function that return the hash of the block contents.
+        # Función que devuelve el hash del contenido del bloque.
         """
+        # json.dumps: convierte un objeto de Python en una cadena JSON
         block_string = json.dumps(self.__dict__, sort_keys=True)
+        # sha256: devuelve un objeto hash que contiene el hash SHA-256 del contenido de la cadena
         return sha256(block_string.encode()).hexdigest()
 
-
+# Blockchain es una lista de bloques, con un método para crear el bloque de génesis y otro para agregar un bloque a la cadena.
 class Blockchain:
-    # difficulty of our PoW algorithm
-    difficulty = 2
+    # difficulty: dificultad de nuestro algoritmo de PoW
+    difficulty = 4
 
+    # Método constructor
     def __init__(self):
+        # unconfirmed_transactions: lista de transacciones pendientes
         self.unconfirmed_transactions = []
+        # chain: lista de bloques
         self.chain = []
 
+    # Método para crear el bloque de génesis, El bloque genesis es el primer bloque de la cadena de bloques.
     def create_genesis_block(self):
         """
-        A function to generate genesis block and appends it to
-        the chain. The block has index 0, previous_hash as 0, and
-        a valid hash.
+        # Función para generar el bloque de génesis y lo agrega a la cadena. El bloque tiene índice 0, previous_hash como 0 y un hash válido.
         """
+        # Block: clase que representa un bloque
         genesis_block = Block(0, [], 0, "0")
+        # compute_hash: función que devuelve el hash del contenido del bloque
         genesis_block.hash = genesis_block.compute_hash()
+        # chain: lista de bloques
         self.chain.append(genesis_block)
 
     @property
@@ -67,8 +79,7 @@ class Blockchain:
     @staticmethod
     def proof_of_work(block):
         """
-        Function that tries different values of nonce to get a hash
-        that satisfies our difficulty criteria.
+        # Función que intenta diferentes valores de nonce para obtener un hash que cumpla con nuestros criterios de dificultad.
         """
         block.nonce = 0
 
@@ -78,19 +89,21 @@ class Blockchain:
             computed_hash = block.compute_hash()
 
         return computed_hash
-
+    
+    # Método para agregar una nueva transacción a la lista de transacciones pendientes
     def add_new_transaction(self, transaction):
         self.unconfirmed_transactions.append(transaction)
 
     @classmethod
     def is_valid_proof(cls, block, block_hash):
         """
-        Check if block_hash is valid hash of block and satisfies
-        the difficulty criteria.
+        # Método para verificar si block_hash es un hash válido del bloque y satisface los criterios de dificultad.
         """
+        # verifica si el hash del bloque comienza con un número de ceros igual a la dificultad
         return (block_hash.startswith('0' * Blockchain.difficulty) and
                 block_hash == block.compute_hash())
 
+    # Método para verificar si la cadena es válida
     @classmethod
     def check_chain_validity(cls, chain):
         result = True
@@ -98,35 +111,41 @@ class Blockchain:
 
         for block in chain:
             block_hash = block.hash
-            # remove the hash field to recompute the hash again
-            # using `compute_hash` method.
+            # quita el campo hash para volver a calcular el hash
+            # usando el método `compute_hash`.
+            # delattr: elimina un atributo de un objeto
             delattr(block, "hash")
 
+            # verifica si el hash del bloque es válido y el bloque anterior y el hash del bloque actual coinciden
             if not cls.is_valid_proof(block, block_hash) or \
                     previous_hash != block.previous_hash:
                 result = False
                 break
 
+            # restaura el hash eliminado
             block.hash, previous_hash = block_hash, block_hash
 
         return result
-
+    
+    # Método para minar bloques
     def mine(self):
         """
-        This function serves as an interface to add the pending
-        transactions to the blockchain by adding them to the block
-        and figuring out Proof Of Work.
+        # Esta función sirve como una interfaz para agregar las transacciones pendientes a la cadena de bloques agregándolas al bloque y descubriendo la Prueba de Trabajo.
         """
         if not self.unconfirmed_transactions:
             return False
 
+        # el último bloque de la cadena
         last_block = self.last_block
 
+        # crea un nuevo bloque con las transacciones pendientes y lo agrega a la cadena
+        # y descubre la prueba de trabajo.
         new_block = Block(index=last_block.index + 1,
                           transactions=self.unconfirmed_transactions,
                           timestamp=time.time(),
                           previous_hash=last_block.hash)
 
+        # proof_of_work: función que intenta diferentes valores de nonce para obtener un hash que cumpla con nuestros criterios de dificultad.
         proof = self.proof_of_work(new_block)
         self.add_block(new_block, proof)
 
@@ -137,11 +156,11 @@ class Blockchain:
 
 app = Flask(__name__)
 
-# the node's copy of blockchain
+# el nodo tiene una copia de la cadena de bloques
 blockchain = Blockchain()
 blockchain.create_genesis_block()
 
-# the address to other participating members of the network
+# la lista de nodos en la red
 peers = set()
 
 
@@ -324,4 +343,4 @@ def announce_new_block(block):
                       headers=headers)
 
 # Uncomment this line if you want to specify the port number in the code
-#app.run(debug=True, port=8000)
+app.run(debug=True, port=8000)

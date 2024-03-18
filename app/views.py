@@ -10,13 +10,13 @@ from app import app
 # such nodes as well.
 CONNECTED_NODE_ADDRESS = "http://127.0.0.1:8000"
 
+#es una lista que almacena los posts, es decir, las transacciones que se han realizado
 posts = []
 
 
 def fetch_posts():
     """
-    Function to fetch the chain from a blockchain node, parse the
-    data and store it locally.
+    funcion para obtener la cadena de un nodo de blockchain, analizar los datos y almacenarlos localmente.
     """
     get_chain_address = "{}/chain".format(CONNECTED_NODE_ADDRESS)
     response = requests.get(get_chain_address)
@@ -38,8 +38,7 @@ def fetch_posts():
 def index():
     fetch_posts()
     return render_template('index.html',
-                           title='YourNet: Decentralized '
-                                 'content sharing',
+                           title='TU RED SOCIAL DE BLOCKCHAIN PARA COMPARTIR CONTENIDO',
                            posts=posts,
                            node_address=CONNECTED_NODE_ADDRESS,
                            readable_time=timestamp_to_string)
