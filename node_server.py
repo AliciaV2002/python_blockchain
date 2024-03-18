@@ -213,7 +213,34 @@ def mine_unconfirmed_transactions():
         return "Block #{} is mined.".format(blockchain.last_block.index)
 
 
-# endpoint to add new peers to the network.
+selected_nodes = ["http://10.253.55.151:8000", "http://10.253.19.173:8000"]
+
+# Endpoint para registrar un nuevo nodo en la red
+@app.route('/register_node', methods=['POST'])
+def register_node():
+    node_address = request.json.get('node_address')
+    if node_address:
+        peers.add(node_address)
+        return 'Node registered successfully', 200
+    else:
+        return 'Invalid node address', 400
+
+# Endpoint para propagar un nuevo bloque a todos los nodos en la red
+@app.route('/propagate_block', methods=['POST'])
+def propagate_block():
+    block_data = request.json
+    for peer in peers:
+        requests.post(peer + '/receive_block', json=block_data)
+    return 'Block propagated successfully', 200
+
+# Endpoint para recibir un nuevo bloque de otro nodo en la red
+@app.route('/receive_block', methods=['POST'])
+def receive_block():
+    block_data = request.json
+    # Procesar y agregar el bloque a la cadena de bloques local
+    return 'Block received successfully', 200
+
+'''# endpoint to add new peers to the network.
 @app.route('/register_node', methods=['POST'])
 def register_new_peers():
     node_address = request.get_json()["node_address"]
@@ -226,7 +253,7 @@ def register_new_peers():
     # Return the consensus blockchain to the newly registered node
     # so that he can sync
     return get_chain()
-
+'''
 
 @app.route('/register_with', methods=['POST'])
 def register_with_existing_node():
@@ -302,7 +329,6 @@ def verify_and_add_block():
 @app.route('/pending_tx')
 def get_pending_tx():
     return json.dumps(blockchain.unconfirmed_transactions)
-
 
 def consensus():
     """
